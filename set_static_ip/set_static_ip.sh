@@ -3,10 +3,13 @@
 # Usage: sudo ./set_static_ip.sh <interface> <static_ip> <gateway> <dns1> [dns2]
 
 INTERFACE="$1"
-STATIC_IP="$2"
+STATIC_IP_MASK="$2"
 GATEWAY="$3"
 DNS1="$4"
 DNS2="$5"
+
+# Extract just the IP part from IP/MASK (e.g., 192.168.1.50 from 192.168.1.50/24)
+STATIC_IP="${STATIC_IP_MASK%%/*}"
 
 # Function to find netplan config file
 get_netplan_file() {
@@ -29,6 +32,18 @@ get_netplan_file() {
     fi
 }
 
+# 🔍 Function to check if IP is available
+check_ip_available() {
+    echo "🔎 Checking if IP $STATIC_IP is available on the network..."
+    ping -c 2 -W 1 "$STATIC_IP" > /dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        echo "❌ IP $STATIC_IP is already in use. Aborting!"
+        exit 2
+    else
+        echo "✅ IP $STATIC_IP appears to be available."
+    fi
+}
+
 NETPLAN_FILE=$(get_netplan_file)
 
 
@@ -42,7 +57,11 @@ if [ -z "$INTERFACE" ] || [ -z "$STATIC_IP" ] || [ -z "$GATEWAY" ] || [ -z "$DNS
   exit 1
 fi
 
-echo "Creating Netplan configuration..."
+# ✅ Check IP availability
+check_ip_available
+cp "$NETPLAN_FILE" "$NETPLAN_FILE.bak"
+
+echo "🛠️  Creating Netplan configuration for static IP $STATIC_IP_MASK..."
 
 cat > "$NETPLAN_FILE" <<EOF
 network:
@@ -50,9 +69,9 @@ network:
   renderer: networkd
   ethernets:
     $INTERFACE:
-      dhcp4: no
+      dhcp4: yes
       addresses:
-        - $STATIC_IP
+        - $STATIC_IP_MASK
       gateway4: $GATEWAY
       nameservers:
         addresses:
@@ -70,5 +89,8 @@ if [ $? -eq 0 ]; then
   echo "Static IP set successfully on $INTERFACE"
 else
   echo "Failed to apply Netplan configuration"
-  exit 2
+    echo "🧯 Restoring previous configuration..."
+    cp "$NETPLAN_FILE.bak" "$NETPLAN_FILE"
+  netplan apply
+  exit 3
 fi
