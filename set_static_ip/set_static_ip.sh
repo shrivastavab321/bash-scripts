@@ -8,7 +8,29 @@ GATEWAY="$3"
 DNS1="$4"
 DNS2="$5"
 
-NETPLAN_FILE="/etc/netplan/01-static-network.yaml"
+# Function to find netplan config file
+get_netplan_file() {
+    local files=(/etc/netplan/*.yaml)
+    if [ ${#files[@]} -eq 0 ]; then
+        echo "❌ No Netplan YAML files found in /etc/netplan/"
+        exit 1
+    elif [ ${#files[@]} -eq 1 ]; then
+        echo "${files[0]}"
+    else
+        echo "⚠️ Multiple Netplan YAML files found:"
+        local i=1
+        for f in "${files[@]}"; do
+            echo "  [$i] $f"
+            ((i++))
+        done
+        echo -n "Select the file number to modify: "
+        read choice
+        echo "${files[$((choice-1))]}"
+    fi
+}
+
+NETPLAN_FILE=$(get_netplan_file)
+
 
 if [ "$(id -u)" -ne 0 ]; then
   echo "Please run as root: sudo $0 <interface> <ip> <gateway> <dns1> [dns2]"
