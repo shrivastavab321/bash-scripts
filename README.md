@@ -12,7 +12,12 @@ Each script in this repository is self-contained and comes with usage instructio
 
 ### `set_static_ip.sh`
 Set a static IP address on Ubuntu 22.04 LTS using Netplan.
+location : bash-scripts/set_static_ip/set_static_ip.sh
 
-**Usage:**
-```bash
-sudo ./set_static_ip.sh <interface> <ip/mask> <gateway> <dns1> [dns2]
+### `setup_nfs_server.sh`
+setup nfs server on Ubuntu 22.04 LTS
+location : bash-scripts/nfs-setup/setup_nfs_server.sh
+
+### `setup_nfs_client.sh`
+nfs setup for client desktop 
+location : bash-scripts/nfs-setup/setup_nfs_client.sh
